@@ -13,4 +13,4 @@ from bertalign.encoder import Encoder
 model_name = "LaBSE"
 model = Encoder(model_name)
 
-from bertalign.aligner import Bertalign
+from .aligner import Bertalign
