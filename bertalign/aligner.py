@@ -1,11 +1,12 @@
 import numpy as np
 
-from . import model
+from bertalign.encoder import Encoder
 from bertalign.corelib import *
 from bertalign.utils import *
 
 class Bertalign:
     def __init__(self,
+                 model_encoder: Encoder,
                  src,
                  tgt,
                  src_lang=None,
@@ -49,9 +50,8 @@ class Bertalign:
         print("Source language: {}, Number of sentences: {}".format(src_lang, src_num))
         print("Target language: {}, Number of sentences: {}".format(tgt_lang, tgt_num))
 
-        print("Embedding source and target text using {} ...".format(model.model_name))
-        src_vecs, src_lens = model.transform(src_sents, max_align - 1)
-        tgt_vecs, tgt_lens = model.transform(tgt_sents, max_align - 1)
+        src_vecs, src_lens = model_encoder.transform(src_sents, max_align - 1)
+        tgt_vecs, tgt_lens = model_encoder.transform(tgt_sents, max_align - 1)
 
         char_ratio = np.sum(src_lens[0,]) / np.sum(tgt_lens[0,])
 
