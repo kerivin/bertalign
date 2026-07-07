@@ -21,7 +21,7 @@ def detect_lang(text):
     
     async def _async_detect():
         translator = Translator(service_urls=[
-            'translate.google.com.hk',
+            'translate.googleapis.com',
         ])
         max_len = 200
         chunk = text[:min(max_len, len(text))]
