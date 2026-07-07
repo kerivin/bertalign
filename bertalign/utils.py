@@ -20,9 +20,7 @@ def detect_lang(text):
         return "en"
     
     async def _async_detect():
-        translator = Translator(service_urls=[
-            'translate.googleapis.com',
-        ])
+        translator = Translator()
         max_len = 200
         chunk = text[:min(max_len, len(text))]
         lang = (await translator.detect(chunk)).lang
