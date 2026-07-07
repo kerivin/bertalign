@@ -34,11 +34,6 @@ class Bertalign:
         if tgt_lang is None:
             tgt_lang = detect_lang(tgt)
         
-        if src_lang is not None:
-            src_lang = src_lang.lower()
-        if tgt_lang is not None:
-            tgt_lang = tgt_lang.lower()
-
         if is_split:
             src_sents = src.splitlines()
             tgt_sents = tgt.splitlines()
