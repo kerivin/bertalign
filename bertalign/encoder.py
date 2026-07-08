@@ -12,7 +12,7 @@ class Encoder:
         for line in yield_overlaps(sents, num_overlaps):
             overlaps.append(line)
 
-        sent_vecs = self.model.encode(overlaps)
+        sent_vecs = self.model.encode(overlaps, show_progress_bar=False)
         embedding_dim = sent_vecs.size // (len(sents) * num_overlaps)
         sent_vecs.resize(num_overlaps, len(sents), embedding_dim)
 

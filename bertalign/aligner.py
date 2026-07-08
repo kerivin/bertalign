@@ -1,8 +1,11 @@
 import numpy as np
+import logging
 
 from bertalign.encoder import Encoder
 from bertalign.corelib import *
 from bertalign.utils import *
+
+logger = logging.getLogger(__name__)
 
 class Bertalign:
     def __init__(self,
@@ -18,6 +21,7 @@ class Bertalign:
                  margin=True,
                  len_penalty=True,
                  is_split=False,
+                 progress_callback=None
                ):
         
         self.max_align = max_align
@@ -47,8 +51,8 @@ class Bertalign:
         src_lang = LANG.ISO[src_lang]
         tgt_lang = LANG.ISO[tgt_lang]
         
-        print("Source language: {}, Number of sentences: {}".format(src_lang, src_num))
-        print("Target language: {}, Number of sentences: {}".format(tgt_lang, tgt_num))
+        logger.info("Source language: {}, Number of sentences: {}".format(src_lang, src_num))
+        logger.info("Target language: {}, Number of sentences: {}".format(tgt_lang, tgt_num))
 
         src_vecs, src_lens = model_encoder.transform(src_sents, max_align - 1)
         tgt_vecs, tgt_lens = model_encoder.transform(tgt_sents, max_align - 1)
@@ -66,17 +70,25 @@ class Bertalign:
         self.char_ratio = char_ratio
         self.src_vecs = src_vecs
         self.tgt_vecs = tgt_vecs
+
+        self.logger = logger
+        self.progress_callback = progress_callback
         
     def align_sents(self):
+        if self.progress_callback:
+            self.progress_callback('bertalign', 0)
 
-        print("Performing first-step alignment ...")
+        logger.info("Performing first-step alignment ...")
         D, I = find_top_k_sents(self.src_vecs[0,:], self.tgt_vecs[0,:], k=self.top_k)
         first_alignment_types = get_alignment_types(2) # 0-1, 1-0, 1-1
         first_w, first_path = find_first_search_path(self.src_num, self.tgt_num)
         first_pointers = first_pass_align(self.src_num, self.tgt_num, first_w, first_path, first_alignment_types, D, I)
         first_alignment = first_back_track(self.src_num, self.tgt_num, first_pointers, first_path, first_alignment_types)
         
-        print("Performing second-step alignment ...")
+        if self.progress_callback:
+            self.progress_callback('bertalign', 50)
+
+        logger.info("Performing second-step alignment ...")
         second_alignment_types = get_alignment_types(self.max_align)
         second_w, second_path = find_second_search_path(first_alignment, self.win, self.src_num, self.tgt_num)
         second_pointers = second_pass_align(self.src_vecs, self.tgt_vecs, self.src_lens, self.tgt_lens,
@@ -84,8 +96,11 @@ class Bertalign:
                                             self.char_ratio, self.skip, margin=self.margin, len_penalty=self.len_penalty)
         second_alignment = second_back_track(self.src_num, self.tgt_num, second_pointers, second_path, second_alignment_types)
         
-        print("Finished! Successfully aligning {} {} sentences to {} {} sentences\n".format(self.src_num, self.src_lang, self.tgt_num, self.tgt_lang))
         self.result = second_alignment
+
+        logger.info("Finished! Successfully aligning {} {} sentences to {} {} sentences\n".format(self.src_num, self.src_lang, self.tgt_num, self.tgt_lang))
+        if self.progress_callback:
+            self.progress_callback('bertalign', 100)
     
     def print_sents(self):
         for bead in (self.result):
