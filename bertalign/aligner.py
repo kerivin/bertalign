@@ -4,24 +4,29 @@ import logging
 from bertalign.encoder import Encoder
 from bertalign.corelib import *
 from bertalign.utils import *
+from lingua import LanguageDetector, Language, IsoCode639_1
 
 class Bertalign:
     def __init__(self,
                  model_encoder: Encoder,
                  src,
                  tgt,
-                 src_lang=None,
-                 tgt_lang=None,
-                 max_align=5,
-                 top_k=3,
-                 win=5,
-                 skip=-0.1,
-                 margin=True,
-                 len_penalty=True,
-                 is_split=False,
-                 progress_callback=None
+                 language_detector: LanguageDetector = None,
+                 src_lang = None,
+                 tgt_lang = None,
+                 max_align = 5,
+                 top_k = 3,
+                 win = 5,
+                 skip = -0.1,
+                 margin = True,
+                 len_penalty = True,
+                 is_split = False,
+                 progress_callback = None
                ):
         
+        if not language_detector and (not src_lang or not tgt_lang):
+            raise Exception('Can\'t detect languages without a language detector.')
+
         self.max_align = max_align
         self.top_k = top_k
         self.win = win
@@ -30,13 +35,13 @@ class Bertalign:
         self.len_penalty = len_penalty
         self.logger = logging.getLogger(__name__)
         self.progress_callback = progress_callback
+        self.language_detector = language_detector
 
         src = clean_text(src)
         tgt = clean_text(tgt)
-        if src_lang is None:
-            src_lang = detect_lang(src)
-        if tgt_lang is None:
-            tgt_lang = detect_lang(tgt)
+
+        src_lang = Language.from_iso_code_639_1(IsoCode639_1.from_str(src_lang)) if src_lang else self._detect_language(src)
+        tgt_lang = Language.from_iso_code_639_1(IsoCode639_1.from_str(tgt_lang)) if tgt_lang else self._detect_language(tgt)
         
         if is_split:
             src_sents = src.splitlines()
@@ -48,11 +53,8 @@ class Bertalign:
         src_num = len(src_sents)
         tgt_num = len(tgt_sents)
         
-        src_lang = LANG.ISO[src_lang]
-        tgt_lang = LANG.ISO[tgt_lang]
-        
-        self.logger.info("Source language: {}, Number of sentences: {}".format(src_lang, src_num))
-        self.logger.info("Target language: {}, Number of sentences: {}".format(tgt_lang, tgt_num))
+        self.logger.info(f"Source language: {src_lang.name}, Number of sentences: {src_num}")
+        self.logger.info(f"Target language: {tgt_lang.name}, Number of sentences: {tgt_num}")
 
         src_vecs, src_lens = model_encoder.transform(src_sents, max_align - 1)
         tgt_vecs, tgt_lens = model_encoder.transform(tgt_sents, max_align - 1)
@@ -71,6 +73,15 @@ class Bertalign:
         self.src_vecs = src_vecs
         self.tgt_vecs = tgt_vecs
     
+    def _detect_language(self, text) -> Language:
+        self.logger.info(f"Detecting language: \"{text[:30]}...\"")
+        lang = self.language_detector.detect_languages_in_parallel_of([text])
+        if not lang:
+            self.logger.info(f"Language not detected: \"{text[:30]}...\"")
+            return Language.ENGLISH
+        self.logger.info(f"Language {lang[0].name} detected: \"{text[:30]}...\"")
+        return lang[0]
+
     def _set_progress(self, step: int, total: int):
         if self.progress_callback:
             self.progress_callback('bertalign', "Bertalign", step, total)

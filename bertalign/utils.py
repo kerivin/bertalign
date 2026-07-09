@@ -1,9 +1,9 @@
 import re
 import asyncio
 import httpx
-from googletrans import Translator
 from sentence_splitter import SentenceSplitter
-from bertalign.languages import LANG
+from bertalign.languages import SupportedLanguages
+from lingua import Language, IsoCode639_1
 
 def clean_text(text):
     clean_text = []
@@ -15,37 +15,22 @@ def clean_text(text):
             line = re.sub(r'\s+', ' ', line)
             clean_text.append(line)
     return "\n".join(clean_text)
-    
-def detect_lang(text):
-    if not text or not text.strip():
-        return "en"
 
-    async def _async_detect():
-        translator = Translator(
-            timeout=httpx.Timeout(timeout=10.0, connect=5.0)
-        )
-        max_len = 200
-        chunk = text[:min(max_len, len(text))]
-        lang = (await translator.detect(chunk)).lang
-        if lang.startswith('zh'):
-            lang = 'zh'
-        return lang
+def is_language_supported(lang: Language | str):
+    if isinstance(lang, str):
+        lang = Language.from_iso_code_639_1(IsoCode639_1.from_str(lang))
+    return lang in SupportedLanguages
 
-    return asyncio.run(_async_detect())
-
-def is_language_supported(lang):
-    return lang in LANG.SPLITTER
-
-def check_language(lang):
+def check_language(lang: Language):
     if not is_language_supported(lang):
-        raise Exception('The language {} is not suppored yet.'.format(LANG.ISO[lang]))
+        raise Exception(f'The language {lang.name} is not suppored yet.')
 
-def split_sents(text, lang):
+def split_sents(text, lang: Language):
     check_language(lang)
-    if lang == 'zh':
+    if lang == Language.CHINESE:
         sents = _split_zh(text)
     else:
-        splitter = SentenceSplitter(language=lang)
+        splitter = SentenceSplitter(language=lang.iso_code_639_1.name.lower())
         sents = splitter.split(text=text) 
         sents = [sent.strip() for sent in sents]
     return sents
