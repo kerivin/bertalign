@@ -109,7 +109,7 @@ class Bertalign:
         self.result = second_alignment
 
         self._set_progress(2, 2)
-        self.logger.info("Finished! Successfully aligning {} {} sentences to {} {} sentences\n".format(self.src_num, self.src_lang, self.tgt_num, self.tgt_lang))
+        self.logger.info(f"Finished! Successfully aligned {self.src_num} {self.src_lang} sentences to {self.tgt_num} {self.tgt_lang} sentences\n")
     
     def print_sents(self):
         for bead in (self.result):
