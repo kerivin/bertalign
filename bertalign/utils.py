@@ -1,5 +1,6 @@
 import re
 import asyncio
+import httpx
 from googletrans import Translator
 from sentence_splitter import SentenceSplitter
 from bertalign.languages import LANG
@@ -18,9 +19,11 @@ def clean_text(text):
 def detect_lang(text):
     if not text or not text.strip():
         return "en"
-    
+
     async def _async_detect():
-        translator = Translator()
+        translator = Translator(
+            timeout=httpx.Timeout(timeout=10.0, connect=5.0)
+        )
         max_len = 200
         chunk = text[:min(max_len, len(text))]
         lang = (await translator.detect(chunk)).lang
