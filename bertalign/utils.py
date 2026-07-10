@@ -28,6 +28,7 @@ def _layer(lines, num_overlaps, comb=' '):
     return out
     
 def _preprocess_line(line):
+    line = line.strip()
     if len(line) == 0:
         line = 'BLANK_LINE'
     return line
