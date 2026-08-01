@@ -1,9 +1,9 @@
 import numpy as np
 import logging
 
-from bertalign.encoder import Encoder
-from bertalign.corelib import *
-from bertalign.utils import *
+from .encoder import Encoder
+from .corelib import *
+from .utils import *
 
 class Bertalign:
     def __init__(self,
